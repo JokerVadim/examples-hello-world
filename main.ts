@@ -1,18 +1,22 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 serve(async (req) => {
-  console.log("📨 Request received:", req.method);
+  console.log("📨 Request received:", req.method, req.url);
   
-  // Сразу отвечаем OK для Telegram
-  const response = { status: "OK" };
-  
-  // Асинхронно обрабатываем POST запросы
+  // ВАЖНО: Отвечаем 200 на ЛЮБОЙ запрос!
+  if (req.method === "GET") {
+    console.log("✅ GET request - webhook check");
+    return new Response(JSON.stringify({ status: "OK", method: "GET" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   if (req.method === "POST") {
     try {
       const body = await req.json();
       console.log("📝 Body:", JSON.stringify(body));
       
-      // Обрабатываем команду /start
       if (body.message?.text === "/start") {
         const chatId = body.message.chat.id;
         const userName = body.message.from.first_name || "User";
@@ -35,12 +39,17 @@ serve(async (req) => {
     } catch (error) {
       console.log("❌ Error:", error);
     }
+    
+    return new Response(JSON.stringify({ status: "OK", method: "POST" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   }
-  
-  // Всегда возвращаем 200 OK
-  return new Response(JSON.stringify(response), {
+
+  // Для любых других методов
+  return new Response(JSON.stringify({ status: "OK" }), {
     status: 200,
-    headers: { "Content-Type": "application/json" }
+    headers: { "Content-Type": "application/json" },
   });
 });
 
